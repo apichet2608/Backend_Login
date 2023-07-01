@@ -9,10 +9,11 @@ const jwt = require("jsonwebtoken");
 const secretKey = "my_secret_key_fujikura";
 
 const pool = new Pool({
+  host: "10.17.77.111",
+  port: 5432,
   user: "postgres",
-  host: "127.0.0.1",
+  password: "postgres",
   database: "postgres",
-  password: "fujikura",
 });
 
 router.use(cors());
