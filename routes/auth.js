@@ -21,19 +21,23 @@ router.use(cors());
 const jsonParser = bodyParser.json();
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-// เส้นทางสำหรับลงทะเบียนผู้ใช้ใหม่
 router.post("/register", jsonParser, async function (req, res, next) {
   try {
-    const { username, password, email, fname, lname, dept, jgrade } = req.body;
+    let { username, password, email, fname, lname, dept, jgrade } = req.body;
 
-    // ตรวจสอบว่า username หรือ email ซ้ำกับที่มีอยู่แล้วในฐานข้อมูล
+    // Convert username and email to uppercase and lowercase respectively before saving
+    username = username.toUpperCase();
+    email = email.toUpperCase();
+    username = username.toLowerCase();
+    email = email.toLowerCase();
+    // Check if the username or email already exists in the database
     const duplicateQuery =
       "SELECT COUNT(*) FROM users WHERE username = $1 OR email = $2";
     const duplicateResult = await pool.query(duplicateQuery, [username, email]);
 
     if (duplicateResult.rows[0].count > 0) {
       return res.status(400).json({
-        message: "ชื่อผู้ใช้หรืออีเมล์นี้ถูกใช้งานแล้ว",
+        message: "This username or email is already in use",
       });
     }
 
@@ -49,11 +53,11 @@ router.post("/register", jsonParser, async function (req, res, next) {
       dept,
       jgrade,
     ]);
-    res.status(201).json({ message: "ลงทะเบียนผู้ใช้เรียบร้อยแล้ว" });
+    res.status(201).json({ message: "User registration successful" });
   } catch (error) {
-    console.error("ข้อผิดพลาดในระหว่างการลงทะเบียน:", error);
+    console.error("Error during registration:", error);
     res.status(500).json({
-      message: "การลงทะเบียนล้มเหลว",
+      message: "Registration failed",
       error: {
         message: error.message,
         sql: error.query,
@@ -62,41 +66,43 @@ router.post("/register", jsonParser, async function (req, res, next) {
   }
 });
 
-// เส้นทางสำหรับเข้าสู่ระบบ
 router.post("/login", jsonParser, async function (req, res, next) {
   try {
-    const { usernameOrEmail, password } = req.body;
+    let { usernameOrEmail, password } = req.body;
+    usernameOrEmail = usernameOrEmail.toUpperCase();
+    usernameOrEmail = usernameOrEmail.toLowerCase();
+
     const query = "SELECT * FROM users WHERE username = $1 OR email = $1";
     const result = await pool.query(query, [usernameOrEmail]);
 
     if (result.rowCount === 0) {
-      return res.status(401).json({ message: "ข้อมูลประจำตัวไม่ถูกต้อง" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const user = result.rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "ข้อมูลประจำตัวไม่ถูกต้อง" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign({ userId: user.id }, secretKey, { expiresIn: "1h" });
 
     res.json({
       status: "OK",
-      message: "เข้าสู่ระบบสำเร็จ",
+      message: "Login successful",
       token: token,
       user: {
-        // เพิ่มข้อมูลผู้ใช้ในอ็อบเจกต์ JSON ที่ส่งกลับ
+        // Add user details to the JSON object sent back
         id: user.id,
         username: user.username,
         email: user.email,
-        // เพิ่มรายละเอียดเพิ่มเติมของผู้ใช้ตามต้องการ
+        // Add additional user details as needed
       },
     });
   } catch (error) {
-    console.error("ข้อผิดพลาดในระหว่างการเข้าสู่ระบบ:", error);
-    res.status(500).json({ message: "เข้าสู่ระบบล้มเหลว" });
+    console.error("Error during login:", error);
+    res.status(500).json({ message: "Login failed" });
   }
 });
 
