@@ -66,6 +66,43 @@ router.post("/register", jsonParser, async function (req, res, next) {
   }
 });
 
+router.post("/api/users_dept", async (req, res) => {
+  try {
+    const { email, dept } = req.body;
+
+    // Split the department string into an array of departments
+    const departments = dept.split(",");
+
+    // Create an array of parameter arrays for the multiple INSERT statements
+    const values = departments.map((department) => [email, department]);
+
+    // Execute the INSERT statements using a transaction
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const insertQuery =
+        "INSERT INTO users_dept (email, dept) VALUES ($1, $2)";
+      await Promise.all(
+        values.map((params) => client.query(insertQuery, params))
+      );
+
+      await client.query("COMMIT");
+      res.status(200).json({ message: "Departments inserted successfully" });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while inserting departments" });
+  }
+});
+
 router.post("/login", jsonParser, async function (req, res, next) {
   try {
     let { usernameOrEmail, password } = req.body;
