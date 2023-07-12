@@ -88,6 +88,18 @@ router.post("/api/users_dept", async (req, res) => {
       );
 
       await client.query("COMMIT");
+
+      // Delete duplicate entries
+      const deleteQuery = `
+        DELETE FROM public.users_dept
+        WHERE id NOT IN (
+          SELECT MIN(id)
+          FROM public.users_dept
+          GROUP BY email, dept
+        )
+      `;
+      await client.query(deleteQuery);
+
       res.status(200).json({ message: "Departments inserted successfully" });
     } catch (error) {
       await client.query("ROLLBACK");
