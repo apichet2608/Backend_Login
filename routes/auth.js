@@ -8,12 +8,20 @@ const saltRounds = 10;
 const jwt = require("jsonwebtoken");
 const secretKey = "my_secret_key_fujikura";
 
+// const pool = new Pool({
+//   host: "10.17.77.111",
+//   port: 5432,
+//   user: "postgres",
+//   password: "postgres",
+//   database: "postgres",
+// });
+
 const pool = new Pool({
-  host: "10.17.77.111",
+  host: "10.17.66.122",
   port: 5432,
   user: "postgres",
-  password: "postgres",
-  database: "postgres",
+  password: "p45aH9c17hT11T{]",
+  database: "iot",
 });
 
 router.use(cors());
@@ -32,7 +40,7 @@ router.post("/register", jsonParser, async function (req, res, next) {
     email = email.toLowerCase();
     // Check if the username or email already exists in the database
     const duplicateQuery =
-      "SELECT COUNT(*) FROM users WHERE username = $1 OR email = $2";
+      "SELECT COUNT(*) FROM smart.smart_users WHERE username = $1 OR email = $2";
     const duplicateResult = await pool.query(duplicateQuery, [username, email]);
 
     if (duplicateResult.rows[0].count > 0) {
@@ -43,7 +51,7 @@ router.post("/register", jsonParser, async function (req, res, next) {
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const query =
-      "INSERT INTO users (username, password, email, fname, lname, dept,jgrade) VALUES ($1, $2, $3, $4, $5, $6,$7)";
+      "INSERT INTO smart.smart_users (username, password, email, fname, lname, dept,jgrade) VALUES ($1, $2, $3, $4, $5, $6,$7)";
     await pool.query(query, [
       username,
       hashedPassword,
@@ -82,7 +90,7 @@ router.post("/api/users_dept", async (req, res) => {
       await client.query("BEGIN");
 
       const insertQuery =
-        "INSERT INTO users_dept (email, dept) VALUES ($1, $2)";
+        "INSERT INTO smart.smart_users_dept (email, dept) VALUES ($1, $2)";
       await Promise.all(
         values.map((params) => client.query(insertQuery, params))
       );
@@ -91,10 +99,10 @@ router.post("/api/users_dept", async (req, res) => {
 
       // Delete duplicate entries
       const deleteQuery = `
-        DELETE FROM public.users_dept
+        DELETE FROM smart.smart_users_dept
         WHERE id NOT IN (
           SELECT MIN(id)
-          FROM public.users_dept
+          FROM smart.smart_users_dept
           GROUP BY email, dept
         )
       `;
@@ -121,7 +129,8 @@ router.post("/login", jsonParser, async function (req, res, next) {
     usernameOrEmail = usernameOrEmail.toUpperCase();
     usernameOrEmail = usernameOrEmail.toLowerCase();
 
-    const query = "SELECT * FROM users WHERE username = $1 OR email = $1";
+    const query =
+      "SELECT * FROM smart.smart_users WHERE username = $1 OR email = $1";
     const result = await pool.query(query, [usernameOrEmail]);
 
     if (result.rowCount === 0) {
@@ -166,7 +175,7 @@ router.post(
 
       // คำสั่ง SQL เพื่อดึงข้อมูลผู้ใช้จากฐานข้อมูล
       const query = `
-        SELECT * FROM users
+        SELECT * FROM smart.smart_users
         WHERE id = $1
       `;
       const values = [userId];
