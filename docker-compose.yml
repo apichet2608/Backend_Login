@@ -1,0 +1,15 @@
+# docker compose up -d
+# docker compose kill
+
+version: "3"
+
+services:
+  nodeapi-Backend-Login:
+    image: node:lts-alpine
+    working_dir: /app
+    ports:
+      - "3003:3003"
+    volumes:
+      - .:/app
+    command: ["node", "./bin/www"]
+    container_name: nodeapi-Backend-Login
