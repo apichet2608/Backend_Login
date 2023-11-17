@@ -77,26 +77,20 @@ router.post("/register", jsonParser, async function (req, res, next) {
 router.post("/api/users_dept", async (req, res) => {
   try {
     const { email, dept } = req.body;
-
     // Split the department string into an array of departments
     const departments = dept.split(",");
-
     // Create an array of parameter arrays for the multiple INSERT statements
     const values = departments.map((department) => [email, department]);
-
     // Execute the INSERT statements using a transaction
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-
       const insertQuery =
         "INSERT INTO smart.smart_users_dept (email, dept) VALUES ($1, $2)";
       await Promise.all(
         values.map((params) => client.query(insertQuery, params))
       );
-
       await client.query("COMMIT");
-
       // Delete duplicate entries
       const deleteQuery = `
         DELETE FROM smart.smart_users_dept
@@ -204,5 +198,78 @@ router.post(
     }
   }
 );
+
+router.post("/reset-password", jsonParser, async function (req, res, next) {
+  try {
+    const { email, newPassword } = req.body;
+
+    // ตรวจสอบว่าอีเมลนี้มีอยู่ในฐานข้อมูลหรือไม่
+    const checkEmailQuery =
+      "SELECT COUNT(*) FROM smart.smart_users WHERE email = $1";
+    const emailExists = await pool.query(checkEmailQuery, [email]);
+    console.log(email)
+    console.log(emailExists)
+    if (emailExists.rows[0].count === 0 || emailExists.rows[0].count === '0' ) {
+      return res.status(404).json({ message: "ไม่พบอีเมลนี้ในระบบ" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // อัปเดตรหัสผ่านใหม่ในฐานข้อมูล
+    const updateQuery =
+      "UPDATE smart.smart_users SET password = $1 WHERE email = $2";
+    await pool.query(updateQuery, [hashedPassword, email]);
+
+    res.json({ message: "รีเซ็ตรหัสผ่านสำเร็จ" });
+  } catch (error) {
+    console.error("ข้อผิดพลาดในระหว่างรีเซ็ตรหัสผ่าน:", error);
+    res.status(500).json({ message: "รีเซ็ตรหัสผ่านล้มเหลว" });
+  }
+});
+
+// router.post("/reset-password", jsonParser, async function (req, res, next) {
+//   try {
+//     const { email, oldPassword, newPassword } = req.body;
+
+//     // ตรวจสอบว่าอีเมลนี้มีอยู่ในฐานข้อมูลหรือไม่
+//     const checkEmailQuery =
+//       "SELECT COUNT(*) FROM smart.smart_users WHERE email = $1";
+//     const emailExists = await pool.query(checkEmailQuery, [email]);
+
+//     if (emailExists.rows[0].count === 0 || emailExists.rows[0].count === '0') {
+//       return res.status(404).json({ message: "ไม่พบอีเมลนี้ในระบบ" });
+//     }
+
+//     // ดึงรหัสผ่านเดิมจากฐานข้อมูล
+//     const getPasswordQuery =
+//       "SELECT password FROM smart.smart_users WHERE email = $1";
+//     const oldPasswordResult = await pool.query(getPasswordQuery, [email]);
+
+//     if (oldPasswordResult.rows.length === 0 || oldPasswordResult.rows.length === '0') {
+//       return res.status(404).json({ message: "ไม่พบข้อมูลผู้ใช้" });
+//     }
+
+//     const oldPasswordFromDB = oldPasswordResult.rows[0].password;
+//     const isOldPasswordValid = await bcrypt.compare(oldPassword, oldPasswordFromDB);
+
+//     if (!isOldPasswordValid) {
+//       return res.status(401).json({ message: "รหัสผ่านเก่าไม่ถูกต้อง" });
+//     }
+
+//     // เข้ารหัสรหัสผ่านใหม่
+//     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+//     // อัปเดตรหัสผ่านใหม่ในฐานข้อมูล
+//     const updateQuery =
+//       "UPDATE smart.smart_users SET password = $1 WHERE email = $2";
+//     await pool.query(updateQuery, [hashedPassword, email]);
+
+//     res.json({ message: "รีเซ็ตรหัสผ่านสำเร็จ" });
+//   } catch (error) {
+//     console.error("ข้อผิดพลาดในระหว่างรีเซ็ตรหัสผ่าน:", error);
+//     res.status(500).json({ message: "รีเซ็ตรหัสผ่านล้มเหลว" });
+//   }
+// });
+
 
 module.exports = router;
