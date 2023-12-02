@@ -207,9 +207,9 @@ router.post("/reset-password", jsonParser, async function (req, res, next) {
     const checkEmailQuery =
       "SELECT COUNT(*) FROM smart.smart_users WHERE email = $1";
     const emailExists = await pool.query(checkEmailQuery, [email]);
-    console.log(email)
-    console.log(emailExists)
-    if (emailExists.rows[0].count === 0 || emailExists.rows[0].count === '0' ) {
+    console.log(email);
+    console.log(emailExists);
+    if (emailExists.rows[0].count === 0 || emailExists.rows[0].count === "0") {
       return res.status(404).json({ message: "ไม่พบอีเมลนี้ในระบบ" });
     }
 
@@ -270,6 +270,5 @@ router.post("/reset-password", jsonParser, async function (req, res, next) {
 //     res.status(500).json({ message: "รีเซ็ตรหัสผ่านล้มเหลว" });
 //   }
 // });
-
 
 module.exports = router;
