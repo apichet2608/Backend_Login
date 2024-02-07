@@ -11,5 +11,10 @@ services:
       - "3003:3003"
     volumes:
       - .:/app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
     command: ["node", "./bin/www"]
     container_name: nodeapi-Backend-Login

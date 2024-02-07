@@ -6,8 +6,7 @@ const logger = require("morgan");
 
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
-const emailRoutes = require("./routes/emailRoutes");
-const authRoutes = require("./routes/auth");
+const foxconn_upload_userID = require("./routes/10.17.66.120/fetlmes/userID/foxconn_upload_userID");
 
 const app = express();
 
@@ -23,8 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
-app.use("/send-email", emailRoutes);
-app.use("/", authRoutes);
+app.use("/foxconn_upload_userID", foxconn_upload_userID);
 
 app.use(function (req, res, next) {
   next(createError(404));
